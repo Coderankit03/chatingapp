@@ -75,7 +75,7 @@ const ChatContainer = () => {
                                 <img 
                                     src = {message.image}
                                     alt="Attachment"
-                                    className='Sm:max-w-[200px] rounded-md mb-2'
+                                    className='Sm:max-w-[200px]  rounded-md mb-2'
                                 />
                             )}
                             {message.text && <p>{message.text}</p>}

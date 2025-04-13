@@ -13,10 +13,10 @@ import { useThemeStore } from './store/useThemeStore'
 import Forgot from './pages/forgot'
 
 const App = () => {
-  const { authUser, checkAuth, isChechingAuth , onlineUsers } = useAuthStore()
+  const { authUser, checkAuth, isChechingAuth } = useAuthStore()
   const { theme } = useThemeStore()
   
-  console.log({onlineUsers})
+  
 
   useEffect(() => {
     checkAuth()

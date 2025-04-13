@@ -10,7 +10,8 @@ export const useChatStore = create((set, get) => ({
     isUsersLoading: false,
     isMessagesLoading: false,
     unreadMessagesMap: {}, // userId -> true if unread
-  
+    lastMessagesMap: JSON.parse(localStorage.getItem("lastMessagesMap")) || {}, // Persisted map
+
     getUsers: async () => {
       set({ isUsersLoading: true });
       try {
@@ -53,10 +54,19 @@ export const useChatStore = create((set, get) => ({
       
   
     sendMessage: async (messageData) => {
-        const { selectedUser, messages, moveUserToTop } = get();
+        const { selectedUser, messages, moveUserToTop, lastMessagesMap } = get();
         try {
           const res = await axiosInstance.post(`/message/send/${selectedUser._id}`, messageData);
           set({ messages: [...messages, res.data] });
+
+          // Update lastMessagesMap
+          const updatedLastMessagesMap = {
+            ...lastMessagesMap,
+            [selectedUser._id]: { timestamp: Date.now() },
+          };
+          set({ lastMessagesMap: updatedLastMessagesMap });
+          localStorage.setItem("lastMessagesMap", JSON.stringify(updatedLastMessagesMap));
+
           moveUserToTop(selectedUser._id); // 👈 Move to top on send
         } catch (error) {
           toast.error(error.response?.data?.message || "Message failed");
@@ -67,7 +77,7 @@ export const useChatStore = create((set, get) => ({
     subscribeToMessages: () => {
       const socket = useAuthStore.getState().socket;
       socket.on("newMessage", (newMessage) => {
-        const { selectedUser, messages, unreadMessagesMap , moveUserToTop } = get();
+        const { selectedUser, messages, unreadMessagesMap , moveUserToTop, lastMessagesMap } = get();
         const isFromSelectedUser = newMessage.senderId === selectedUser?._id;
   
         if (isFromSelectedUser) {
@@ -82,6 +92,14 @@ export const useChatStore = create((set, get) => ({
             },
           });
         }
+
+        // Update lastMessagesMap
+        const updatedLastMessagesMap = {
+          ...lastMessagesMap,
+          [newMessage.senderId]: { timestamp: Date.now() },
+        };
+        set({ lastMessagesMap: updatedLastMessagesMap });
+        localStorage.setItem("lastMessagesMap", JSON.stringify(updatedLastMessagesMap));
 
         moveUserToTop(newMessage.senderId); // 👈 Move sender to top
 
@@ -100,4 +118,3 @@ export const useChatStore = create((set, get) => ({
       set({ selectedUser: user, unreadMessagesMap: unreadMap });
     },
   }));
-  

@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
 import { Users } from "lucide-react";
 
 const Sidebar = () => {
-    const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, unreadMessagesMap } = useChatStore();
+    const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, unreadMessagesMap, lastMessagesMap } = useChatStore();
 
     const { onlineUsers } = useAuthStore();
     const [showOnlineOnly, setShowOnlineOnly] = useState(false);
@@ -14,9 +14,17 @@ const Sidebar = () => {
         getUsers();
     }, [getUsers]);
 
-    const filteredUsers = showOnlineOnly
-        ? users.filter((user) => onlineUsers.includes(user._id))
-        : users;
+    const filteredUsers = useMemo(() => {
+        const baseUsers = showOnlineOnly
+            ? users.filter((user) => onlineUsers.includes(user._id))
+            : users;
+
+        return baseUsers.sort((a, b) => {
+            const lastMessageA = lastMessagesMap?.[a._id]?.timestamp || 0;
+            const lastMessageB = lastMessagesMap?.[b._id]?.timestamp || 0;
+            return lastMessageB - lastMessageA;
+        });
+    }, [users, showOnlineOnly, onlineUsers, lastMessagesMap]);
 
     if (isUsersLoading) return <SidebarSkeleton />;
 
@@ -27,7 +35,6 @@ const Sidebar = () => {
                     <Users className="size-6" />
                     <span className="font-medium hidden lg:block">Contacts</span>
                 </div>
-                {/* TODO: Online filter toggle */}
                 <div className="mt-3 hidden lg:flex items-center gap-2">
                     <label className="cursor-pointer flex items-center gap-2">
                         <input
